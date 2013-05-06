@@ -1,2 +1,4 @@
-niceorm
+NiceORM
 =======
+
+Nette\Database based ORM library
