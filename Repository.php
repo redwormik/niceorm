@@ -10,45 +10,54 @@ use Nette,
 class Repository extends Nette\Object
 {
 
-	/** @var Connection */
-	protected $database;
+	protected $manager;
+	protected $mapper;
+	protected $type;
 
-	protected $tableName;
 
-	public function __construct(Connection $database, $tableName) {
-		$this->database = $database;
-		$this->tableName = $tableName;
+	public function __construct(Manager $manager, Mapper $mapper, $type) {
+		$this->manager = $manager;
+		$this->mapper = $mapper;
+		$this->type = $type;
 	}
 
 
 	public function get($id)
 	{
-		$row = $this->getTable()->get($id);
-		if (!$row)
-			return NULL;
-		return $this->create($row);
+		$row = $this->mapper->get($id);
+		return $row ? $this->manager->createEntity($this->type, $row) : NULL;
 	}
 
 
-	public function create($row = NULL)
+	public function getAll()
 	{
-		$entity = $this->entityFactory->invoke();
-		if ($row) {
-			$accessor = new ActiveRowAccessor($row);
-			$entity->injectAccessor($row);
-		}
-		return $entity;
+		return $this->manager->createCollection($this->type, $this->mapper->createTable());
+	}
+
+
+	public function create()
+	{
+		return $this->manager->createEntity($this->type);
 	}
 
 
 	public function save(Entity $entity)
 	{
-		if (!isset($this->accessors[$entity])) {
-			$accessor = new NullAccessor;
-			$entity->injectAccessor($accessor);
-			$row = $this->getTable()->
-			$this->accessors[$entity] = $accessor;
+		$row = $this->manager->getEntityRow($entity);
+		if ($row !== NULL) {
+			$this->mapper->update($row->getPrimary(), $entity->getModified());
 		}
+		$row = $this->mapper->insert($entity->getModified());
+		$this->manager->setEntityRow();
+	}
+
+
+	public function delete(Entity $entity)
+	{
+		$primary = $this->manager->getPrimary($entity);
+		if ($primary === NULL)
+			return FALSE;
+		return $this->mapper->delete($primary);
 	}
 
 }

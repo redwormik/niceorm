@@ -9,39 +9,51 @@ use Nette,
 class Manager extends Nette\Object
 {
 
+	protected $entityFactory;
+	protected $accessorFactory;
+	protected $rows;
+
+
+	public function __construct(EntityFactory $entityFactory, AccessorFactory $accessorFactory)
+	{
+		$this->entityFactory = $entityFactory;
+		$this->accessorFactory = $accessorFactory;
+		$this->rows = new \SplObjectStorage;
+	}
+
+
 	public function createEntity($type, Table\ActiveRow $row = NULL)
 	{
-		$entity = $this->entityFactory->create($type);
-		if ($row) {
-			$accessor = $this->createAccessor($type, $row);
-			$entity->injectDataAccessor($accessor);
-			$this->managed[$entity] = $accessor;
-			// save type here?
-		}
+		$entity = $this->entityFactory->create($type, $row);
+		if ($row)
+			$this->setEntityRow($type, $entity, $row);
 		return $entity;
 	}
 
 
-	public function createCollection($type, Table\Selection $table = NULL)
+	public function createCollection($type, Table\Selection $table)
 	{
-		if ($table === NULL)
-			$table = $this->createTable($type);
-		return new Collection($table, $this);
+		return $this->collectionFactory->create($this, $type, $table);
+	}
+
+
+	public function getEntityRow(Entity $entity)
+	{
+		return isset($this->row[$entity]) ? $this->row[$entity] : NULL;
+	}
+
+
+	public function setEntityRow($type, Entity $entity, Table\ActiveRow $row)
+	{
+		$accessor = $this->createAccessor($type, $row);
+		$entity->injectDataAccessor($accessor);
+		$this->rows[$entity] = $row;
 	}
 
 
 	protected function createAccessor($type, $row)
 	{
-		return new ActiveRowAccessor($row, $this, $this->fields[$type], $this->refs[$type], $this->related[$type]);
-	}
-
-
-
-
-
-	public function save(Entity $entity)
-	{
-
+		return $this->accessorFactory->create($this, $type, $row);
 	}
 
 }

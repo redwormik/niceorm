@@ -3,7 +3,8 @@
 namespace NiceORM;
 
 use Nette,
-	Nette\Database\Table\ActiveRow;
+	Nette\Database\Table\ActiveRow,
+	Nette\Database\Table\Selection;
 
 
 class ActiveRowAccessor extends Nette\Object implements IEntityDataAccessor {
@@ -11,72 +12,32 @@ class ActiveRowAccessor extends Nette\Object implements IEntityDataAccessor {
 	/** @var Manager */
 	protected $manager;
 
+	/** @var ActiveRowMapper */
+	protected $mapper;
+
 	/** @var ActiveRow */
 	protected $row;
 
-	/** @var array */
-	protected $fields;
-	protected $refs;
-	protected $related;
 
-	protected $modified = array();
-
-
-	public function __construct(ActiveRow $row, Manager $manager,array $fields, array $refs, array $related) {
+	public function __construct(Manager $manager, ActiveRowMapper $mapper, ActiveRow $row) {
 		$this->manager = $manager;
+		$this->mapper = $mapper;
 		$this->row = $row;
-		$this->fields = $fields;
-		$this->refs = $refs;
-		$this->related = $related;
 	}
 
 
 	public function & getField($name) {
-		if (isset($this->fields[$name])) {
-			$column = $this->fields[$name];
-			return $this->row->$column;
-		}
-
-		if (isset($this->refs[$name])) {
-			list($table, $column, $type) = $this->refs[$name];
-			$row = $this->row->ref($table, $column);
-			if (!$row)
-				return NULL;
-			return $this->manager->createEntity($type, $row);
-		}
-
-		if (isset($this->related[$name])) {
-			list($table, $column, $type) = $this->refs[$name];
-			$table = $this->row->related($table, $column);
-			return $this->manager->createCollection($type, $table);
-		}
-
-		throw new Nette\InvalidArgumentException;
-	}
-
-
-	public function setField($name, $value) {
-		if (isset($this->fields[$name]))
-			$this->modified[$name] = $value;
-		if (isset($this->refs[$name])) {
-			// list($table, $column) = $this->refs[$name];
-			// $this->modified[$column] = $value;
-			return; // TODO
-		}
-		if (isset($this->related[$name])) {
-			return; // TODO
-		}
-		throw new Nette\InvalidArgumentException;
+		$value = $this->mapper->getField($row, $name, $type);
+		if ($value instanceof ActiveRow)
+			return $this->manager->createEntity($type, $value);
+		if ($value instanceof Selection)
+			return $this->manager->createCollection($type, $value);
+		return $value;
 	}
 
 
 	public function getFieldNames() {
-		return array_merge(array_keys($this->fields), array_keys($this->refs), array_keys($this->related));
-	}
-
-
-	public function getModified() {
-		return $this->modified;
+		return $this->mapper->getFieldNames();
 	}
 
 }
