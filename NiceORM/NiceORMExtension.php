@@ -13,13 +13,27 @@ class NiceORMExtension extends Nette\Config\CompilerExtension
 		'tables' => array(),
 		'fields' => array(),
 		'relations' => array(),
-		'entities' => array(),
+		'entity' => array(),
 	);
 
 	public function loadConfiguration()
 	{
 		$container = $this->getContainerBuilder();
-		$config = $this->getConfig();
+		$config = $this->getConfig($this->defaults);
+
+
+		$entities = $collections = array();
+		foreach ($config['entity'] as $domain => $entity) {
+			$container->addDefinition($entities[$domain] = $this->prefix($domain.'.entity'))
+				->setClass($entity)
+				->setShared(FALSE);
+
+			$container->addDefinition($collections[$domain] = $this->prefix($domain.'.collection'))
+				->setClass('NiceORM\\TableCollection', array($domain, '%data%'))
+				->setParameters(array('data'))
+				->setShared(FALSE);
+		}
+
 
 		$fields = $refs = $related = array();
 		foreach ($config['tables'] as $domain => $table) {
@@ -56,43 +70,29 @@ class NiceORMExtension extends Nette\Config\CompilerExtension
 		}
 
 
-
-		$mappers = array();
+		$mappers = $accessors = array();
 		foreach ($config['tables'] as $domain => $table) {
-			$container->addDefinition($mappers[$domain] = $this->prefix($domain.'.mapper'))
-				->setClass('NiceORM\\IMapper')
-				->setFactory('NiceORM\\ActiveRowMapper', array($domain, $table, $fields[$domain], $refs[$domain], $related[$domain]));
-		}
+			$mapper = $container->addDefinition($mappers[$domain] = $this->prefix($domain.'.mapper'))
+				->setClass('NiceORM\\ActiveRowMapper', array($domain, $table, $fields[$domain], $refs[$domain], $related[$domain]));
 
-		$mapperAccessor = $container->addDefinition($this->prefix('mapperAccessor'))
-			->setClass('NiceORM\\IMapperAccessor')
-			->setFactory('NiceORM\\DIMapperAccessor', array($mappers) );
-
-		$accessorFactory = $container->addDefinition($this->prefix('accessorFactory'))
-			->setClass('NiceORM\\IAccessorFactory')
-			->setFactory('NiceORM\\ActiveRowAccessorFactory', array($mapperAccessor) );
-
-
-		$entities = $collections = array();
-		foreach ($config['entity'] as $domain => $entity) {
-			$container->addDefinition($entities[$domain] = $this->prefix($domain.'.entity'))
-				->setClass($entity)
-				->setShared(FALSE);
-
-			$container->addDefinition($collections[$domain] = $this->prefix($domain.'.collection'))
-				->setClass('NiceORM\\TableCollection')
-				->setFactory('NiceORM\\TableCollection', array($domain, '%data%'))
+			$container->addDefinition($accessors[$domain] = $this->prefix($domain.'.accessor'))
+				->setClass('NiceORM\\ActiveRowAccessor', array('%data%', $mapper))
 				->setParameters(array('data'))
 				->setShared(FALSE);
 		}
 
+
 		$entityFactory = $container->addDefinition($this->prefix('entityFactory'))
-			->setClass('NiceORM\\IEntityFactory')
-			->setFactory('NiceORM\\DIEntityFactory', array($entities) );
+			->setClass('NiceORM\\DIEntityFactory', array($entities) );
 
 		$collectionFactory = $container->addDefinition($this->prefix('collectionFactory'))
-			->setClass('NiceORM\\ICollectionFactory')
-			->setFactory('NiceORM\\DICollectionFactory', array($collections) );
+			->setClass('NiceORM\\DICollectionFactory', array($collections) );
+
+		$accessorFactory = $container->addDefinition($this->prefix('accessorFactory'))
+			->setClass('NiceORM\\DIAccessorFactory', array($accessors) );
+
+		$mapperAccessor = $container->addDefinition($this->prefix('mapperAccessor'))
+			->setClass('NiceORM\\DIMapperAccessor', array($mappers) );
 
 
 		$container->addDefinition($this->prefix('manager'))

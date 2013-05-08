@@ -6,7 +6,7 @@ use Nette,
 	Nette\DI\Container;
 
 
-class DIAccessorFactory extends Nette\Object implements IEntityFactory
+class DIAccessorFactory extends Nette\Object implements IAccessorFactory
 {
 
 	protected $services;
