@@ -9,14 +9,14 @@ use Nette,
 class DICollectionFactory extends Nette\Object implements IAccessorFactory
 {
 
-	protected $container;
 	protected $services;
+	protected $container;
 
 
-	public function __construct(Container $container, array $services)
+	public function __construct(array $services, Container $container)
 	{
-		$this->container = $container;
 		$this->services = $services;
+		$this->container = $container;
 	}
 
 
@@ -26,7 +26,7 @@ class DICollectionFactory extends Nette\Object implements IAccessorFactory
 			throw new Nette\InvalidArgumentException;
 		$service = $this->services[$type];
 		$method = Container::getMethodName($service, FALSE);
-		return $this->container->$method($type, $data);
+		return $this->container->$method($data);
 	}
 
 }

@@ -87,6 +87,8 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 					$this->manager->getMapper($type)->save($value);
 					$value = $this->manager->getEntityData($value)->getPrimary();
 				}
+				if ($column === NULL)
+					list($table, $column) = $this->connection->databaseReflection->getBelongsToReference($this->tableName, $table);
 				$data[$column] = $value;
 				continue;
 			}

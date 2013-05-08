@@ -1,2 +1,4 @@
+tmp/*
 vendor/*
+tests/output/*
 composer.lock

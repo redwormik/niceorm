@@ -2,18 +2,21 @@
 
 namespace NiceORM;
 
+use Nette,
+	Nette\DI\Container;
+
 
 class DIMapperAccessor extends Nette\Object implements IMapperAccessor
 {
 
-	protected $container;
 	protected $services;
+	protected $container;
 
 
-	public function __construct(Container $container, array $services)
+	public function __construct(array $services, Container $container)
 	{
-		$this->container = $container;
 		$this->services = $services;
+		$this->container = $container;
 	}
 
 
