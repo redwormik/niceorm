@@ -26,7 +26,7 @@ class DICollectionFactory extends Nette\Object implements IAccessorFactory
 			throw new Nette\InvalidArgumentException;
 		$service = $this->services[$type];
 		$method = Container::getMethodName($service, FALSE);
-		return $this->container->$method();
+		return $this->container->$method($type, $data);
 	}
 
 }

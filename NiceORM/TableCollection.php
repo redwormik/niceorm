@@ -6,7 +6,7 @@ use Nette,
 	Nette\Database\Table;
 
 
-class TableCollection extends Nette\FreezableObject implements ICollection
+class TableCollection extends Nette\FreezableObject implements \Iterator, ICollection
 {
 
 	protected $type;
@@ -113,7 +113,7 @@ class TableCollection extends Nette\FreezableObject implements ICollection
 	}
 
 
-	public function count($column = '')
+	public function count($column = NULL)
 	{
 		// do some mapping here
 		return $this->selection->count($column);

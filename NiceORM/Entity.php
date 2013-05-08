@@ -33,7 +33,7 @@ class Entity extends Nette\Object
 
 	protected function dataGet($name)
 	{
-		if ($this->$name === $this->_dataAccessor)
+		if ($this->_dataAccessor && $this->$name === $this->_dataAccessor)
 			$this->$name = $this->_dataAccessor->getField($name);
 		return $this->$name;
 	}

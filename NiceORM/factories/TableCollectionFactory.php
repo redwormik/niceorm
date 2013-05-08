@@ -9,21 +9,18 @@ use Nette,
 class TableCollectionFactory extends Nette\Object implements ICollectionFactory
 {
 
-	protected $container;
-	protected $services;
+	protected $manager;
 
 
-	public function __construct(Container $container, array $services)
+	public function injectManager(Manager $manager)
 	{
-		$this->container = $container;
-		$this->services = $services;
+		$this->manager = $manager;
 	}
 
 
 	public function create($type, $data)
 	{
-		$manager = $this->container->getByType('NiceORM\\Manager');
-		return new TableCollection($type, $data, $manager);
+		return new TableCollection($type, $data, $this->manager);
 	}
 
 }

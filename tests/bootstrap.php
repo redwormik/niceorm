@@ -22,4 +22,5 @@ $loader = new Nette\Loaders\RobotLoader;
 $loader->setCacheStorage($cacheStorage);
 $loader->addDirectory(__DIR__ . '/../NiceORM');
 $loader->addDirectory(__DIR__ . '/stubs');
+$loader->addDirectory(__DIR__ . '/model');
 $loader->register();

@@ -26,7 +26,7 @@ class ActiveRowAccessor extends Nette\Object implements IFieldAccessor
 
 	public function getField($name)
 	{
-		return $this->mapper->getField($row, $name);
+		return $this->mapper->getField($this->row, $name);
 	}
 
 

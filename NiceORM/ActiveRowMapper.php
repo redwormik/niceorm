@@ -60,7 +60,7 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 	/** @return Entity|NULL */
 	public function get($id)
 	{
-		$row = $this->connection->table($this->tableName)->get($id);
+		$row = $this->createTable()->get($id);
 		return $row ? $this->manager->createEntity($this->type, $row) : NULL;
 	}
 
@@ -68,8 +68,7 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 	/** @return Collection */
 	public function getAll()
 	{
-		$table = $this->connection->table($this->tableName);
-		return $this->manager->createCollection($this->type, $table);
+		return $this->manager->createCollection($this->type, $this->createTable());
 	}
 
 
@@ -86,7 +85,7 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 				list($table, $column, $type) = $this->refs[$name];
 				if ($value instanceof Entity) {
 					$this->manager->getMapper($type)->save($value);
-					$value = $this->manager->getRow($entity)->getPrimary();
+					$value = $this->manager->getEntityData($value)->getPrimary();
 				}
 				$data[$column] = $value;
 				continue;
@@ -97,10 +96,10 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 			}
 			throw new Nette\InvalidArgumentException;
 		}
-		$row = $this->manager->getRow($entity);
+		$row = $this->manager->getEntityData($entity);
 		if ($row === NULL) {
 			$row = $this->createTable()->insert($data);
-			$this->manager->setRow($this->type, $entity, $row);
+			$this->manager->setEntityData($this->type, $entity, $row);
 		}
 		else {
 			$this->createTable()->wherePrimary($row->getPrimary())->update($data);
@@ -110,10 +109,16 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 
 	public function delete(Entity $entity)
 	{
-		$row = $this->manager->getRow($entity);
+		$row = $this->manager->getEntityData($entity);
 		if ($row === NULL)
 			return;
 		return $this->createTable()->wherePrimary($row->getPrimary())->delete();
+	}
+
+
+	protected function createTable()
+	{
+		return $this->connection->table($this->tableName);
 	}
 
 
