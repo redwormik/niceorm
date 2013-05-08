@@ -3,11 +3,12 @@
 namespace NiceORM;
 
 
-interface IEntityDataAcessor
+interface IFieldAccessor
 {
 
+
 	/** @return mixed */
-	function & getField($name);
+	function getField($name);
 
 
 	/** @return array() */

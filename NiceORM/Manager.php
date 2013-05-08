@@ -10,50 +10,68 @@ class Manager extends Nette\Object
 {
 
 	protected $entityFactory;
+	protected $collectionFactory;
 	protected $accessorFactory;
-	protected $rows;
+	protected $mapperAccessor;
+	protected $data;
 
 
-	public function __construct(EntityFactory $entityFactory, AccessorFactory $accessorFactory)
+	public function __construct(IEntityFactory $entityFactory, ICollectionFactory $collectionFactory, IAccessorFactory $accessorFactory, IMapperAccessor $mapperAccessor)
 	{
-		$this->entityFactory = $entityFactory;
-		$this->accessorFactory = $accessorFactory;
-		$this->rows = new \SplObjectStorage;
+		$this->entityFactory     = $entityFactory;
+		$this->collectionFactory = $collectionFactory;
+		$this->accessorFactory   = $accessorFactory;
+		$this->mapperAccessor    = $mapperAccessor;
+		$this->data              = new \SplObjectStorage;
 	}
 
 
-	public function createEntity($type, Table\ActiveRow $row = NULL)
+	public function createEntity($type, $data = NULL)
 	{
-		$entity = $this->entityFactory->create($type, $row);
-		if ($row)
-			$this->setEntityRow($type, $entity, $row);
+		$entity = $this->entityFactory->create($type, $data);
+		if (!$entity instanceof Entity)
+			throw new Nette\UnexpectedValueException;
+		if ($data)
+			$this->setEntityData($type, $entity, $data);
 		return $entity;
 	}
 
 
-	public function createCollection($type, Table\Selection $table)
+	public function createCollection($type, $data)
 	{
-		return $this->collectionFactory->create($this, $type, $table);
+		$collection = $this->collectionFactory->create($type, $data);
+		if (!$collection instanceof ICollection)
+			throw new Nette\UnexpectedValueException;
+		return $collection;
 	}
 
 
-	public function getEntityRow(Entity $entity)
+	public function getEntityData(Entity $entity)
 	{
-		return isset($this->row[$entity]) ? $this->row[$entity] : NULL;
+		return isset($this->data[$entity]) ? $this->data[$entity] : NULL;
 	}
 
 
-	public function setEntityRow($type, Entity $entity, Table\ActiveRow $row)
+	public function setEntityData($type, Entity $entity, $data)
 	{
-		$accessor = $this->createAccessor($type, $row);
+		$accessor = $this->createAccessor($type, $data);
 		$entity->injectDataAccessor($accessor);
-		$this->rows[$entity] = $row;
+		$this->data[$entity] = $data;
 	}
 
 
-	protected function createAccessor($type, $row)
+	public function getMapper($type)
 	{
-		return $this->accessorFactory->create($this, $type, $row);
+		$mapper = $this->mapperAccessor->get($type);
+		if (!$mapper instanceof IMapper)
+			throw new Nette\UnexpectedValueException;
+		return $mapper;
+	}
+
+
+	protected function createAccessor($type, $data)
+	{
+		return $this->accessorFactory->create($type, $data);
 	}
 
 }

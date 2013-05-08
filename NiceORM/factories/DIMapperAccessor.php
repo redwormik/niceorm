@@ -2,11 +2,8 @@
 
 namespace NiceORM;
 
-use Nette,
-	Nette\DI\Container;
 
-
-class AccessorFactory extends Nette\Object
+class DIMapperAccessor extends Nette\Object implements IMapperAccessor
 {
 
 	protected $container;
@@ -20,12 +17,12 @@ class AccessorFactory extends Nette\Object
 	}
 
 
-	public function create(Manager $manager, $type, $data)
+	public function get($type)
 	{
 		if (!isset($this->services[$type]))
 			throw new Nette\InvalidArgumentException;
-		$method = Container::getMethodName($this->services[$type], FALSE);
-		return $this->container->$method($manager, $data);
+		$service = $this->services[$type];
+		return $this->container->getService($service);
 	}
 
 }

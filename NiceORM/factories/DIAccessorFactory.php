@@ -6,7 +6,7 @@ use Nette,
 	Nette\DI\Container;
 
 
-class CollectionFactory extends Nette\Object
+class DIAccessorFactory extends Nette\Object implements IEntityFactory
 {
 
 	protected $container;
@@ -20,16 +20,13 @@ class CollectionFactory extends Nette\Object
 	}
 
 
-	public function create(Manager $manager, $type, $data)
+	public function create($type, $data)
 	{
 		if (!isset($this->services[$type]))
 			throw new Nette\InvalidArgumentException;
 		$service = $this->services[$type];
-		if ($this->container->hasService($service)) {
-			return $this->container->getService($service)->create($manager, $type, $data);
-		}
 		$method = Container::getMethodName($service, FALSE);
-		return $this->container->$method($manager, $type, $data);
+		return $this->container->$method($data);
 	}
 
 }

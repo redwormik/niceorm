@@ -10,28 +10,27 @@ use Nette,
 class Repository extends Nette\Object
 {
 
-	protected $manager;
-	protected $mapper;
 	protected $type;
+	protected $mapper;
+	protected $manager;
 
 
-	public function __construct(Manager $manager, Mapper $mapper, $type) {
-		$this->manager = $manager;
-		$this->mapper = $mapper;
+	public function __construct($type, IMapper $mapper, Manager $manager) {
 		$this->type = $type;
+		$this->mapper = $mapper;
+		$this->manager = $manager;
 	}
 
 
 	public function get($id)
 	{
-		$row = $this->mapper->get($id);
-		return $row ? $this->manager->createEntity($this->type, $row) : NULL;
+		return $this->mapper->get($id);
 	}
 
 
 	public function getAll()
 	{
-		return $this->manager->createCollection($this->type, $this->mapper->createTable());
+		return $this->mapper->getAll();
 	}
 
 
@@ -43,21 +42,13 @@ class Repository extends Nette\Object
 
 	public function save(Entity $entity)
 	{
-		$row = $this->manager->getEntityRow($entity);
-		if ($row !== NULL) {
-			$this->mapper->update($row->getPrimary(), $entity->getModified());
-		}
-		$row = $this->mapper->insert($entity->getModified());
-		$this->manager->setEntityRow();
+		$this->mapper->save($entity);
 	}
 
 
 	public function delete(Entity $entity)
 	{
-		$primary = $this->manager->getPrimary($entity);
-		if ($primary === NULL)
-			return FALSE;
-		return $this->mapper->delete($primary);
+		$this->mapper->delete($entity);
 	}
 
 }

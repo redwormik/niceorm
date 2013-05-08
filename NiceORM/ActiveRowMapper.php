@@ -3,30 +3,36 @@
 namespace NiceORM;
 
 use Nette,
+	Nette\Database\Connection,
 	Nette\Database\Table\ActiveRow;
 
 
 class ActiveRowMapper extends Nette\Object implements IMapper
 {
 
-	protected $connection;
 	protected $type;
+	protected $tableName;
 	protected $fields;
 	protected $refs;
 	protected $related;
 
+	protected $connection;
+	protected $manager;
 
-	public function __construct(Connection $connection, $tableName, array $fields, array $refs, array $related)
+
+	public function __construct($type, $tableName, array $fields, array $refs, array $related, Connection $connection, Manager $manager)
 	{
-		$this->connection = $connection;
 		$this->type       = $type;
+		$this->tableName  = $tableName;
 		$this->fields     = $fields;
 		$this->refs       = $refs;
 		$this->related    = $related;
+		$this->connection = $connection;
+		$this->manager    = $manager;
 	}
 
 
-	public function & getField(ActiveRow $row, $name, &$type)
+	public function getField(ActiveRow $row, $name)
 	{
 		if (isset($this->fields[$name])) {
 			$column = $this->fields[$name];
@@ -35,11 +41,11 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 		if (isset($this->refs[$name])) {
 			list($table, $column, $type) = $this->refs[$name];
 			$ref = $row->ref($table, $column);
-			return $ref ?: NULL;
+			return $ref ? $this->manager->createEntity($type, $row) : NULL;
 		}
 		if (isset($this->related[$name])) {
 			list($table, $column, $type) = $this->related[$name];
-			return  $row->related($table, $column);
+			return $this->manager->createCollection($type, $row->related($table, $column));
 		}
 		throw new Nette\InvalidArgumentException;
 	}
@@ -51,48 +57,63 @@ class ActiveRowMapper extends Nette\Object implements IMapper
 	}
 
 
-	/** @return ActiveRow|NULL */
+	/** @return Entity|NULL */
 	public function get($id)
 	{
-		return $this->createTable()->get($id);
+		$row = $this->connection->table($this->tableName)->get($id);
+		return $row ? $this->manager->createEntity($this->type, $row) : NULL;
 	}
 
 
-	/** @return Selection */
-	public function createTable()
+	/** @return Collection */
+	public function getAll()
 	{
-		return $this->connection->table($this->tableName);
+		$table = $this->connection->table($this->tableName);
+		return $this->manager->createCollection($this->type, $table);
 	}
 
 
-	public function save($data, $id = NULL)
+	public function save(Entity $entity)
 	{
-		$row = array();
-		foreach ($data as $name => $value) {
+		$data = array();
+		foreach ($entity->getDataModified() as $name => $value) {
 			if (isset($this->fields[$name])) {
 				$column = $this->fields[$name];
-				$row[$column] = $value;
+				$data[$column] = $value;
 				continue;
 			}
 			if (isset($this->refs[$name])) {
-				// TODO
+				list($table, $column, $type) = $this->refs[$name];
+				if ($value instanceof Entity) {
+					$this->manager->getMapper($type)->save($value);
+					$value = $this->manager->getRow($entity)->getPrimary();
+				}
+				$data[$column] = $value;
 				continue;
 			}
 			if (isset($this->related[$name])) {
 				// TODO
-				continue;
+				throw new Nette\NotImplementedException;
 			}
 			throw new Nette\InvalidArgumentException;
 		}
-		if ($id === NULL)
-			return $this->createTable()->insert($row);
-		return $this->createTable()->wherePrimary($id)->update($data);
+		$row = $this->manager->getRow($entity);
+		if ($row === NULL) {
+			$row = $this->createTable()->insert($data);
+			$this->manager->setRow($this->type, $entity, $row);
+		}
+		else {
+			$this->createTable()->wherePrimary($row->getPrimary())->update($data);
+		}
 	}
 
 
-	public function delete($id)
+	public function delete(Entity $entity)
 	{
-		return $this->createTable()->wherePrimary($id)->delete();
+		$row = $this->manager->getRow($entity);
+		if ($row === NULL)
+			return;
+		return $this->createTable()->wherePrimary($row->getPrimary())->delete();
 	}
 
 

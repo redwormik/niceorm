@@ -6,19 +6,20 @@ use Nette,
 	Nette\Database\Table;
 
 
-class Collection extends Nette\FreezableObject implements \Iterator, \Countable
+class TableCollection extends Nette\FreezableObject implements ICollection
 {
 
-	protected $manager;
 	protected $type;
 	protected $selection;
+	protected $manager;
 	protected $data;
 
 
-	public function __construct(Manager $manager, $type, Table\Selection $selection) {
-		$this->manager = $manager;
+	public function __construct($type, Table\Selection $selection, Manager $manager)
+	{
 		$this->type = $type;
 		$this->selection = $selection;
+		$this->manager = $manager;
 	}
 
 
@@ -71,7 +72,8 @@ class Collection extends Nette\FreezableObject implements \Iterator, \Countable
 	/********* aggregation *********/
 
 
-	public function collect($item, $preserveKeys = FALSE) {
+	public function collect($item, $preserveKeys = FALSE)
+	{
 		$result = array();
 
 		if (is_array($item) || $item instanceof \Closure || $item instanceof Nette\Callback)
