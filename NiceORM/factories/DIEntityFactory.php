@@ -26,7 +26,7 @@ class DIEntityFactory extends Nette\Object implements IEntityFactory
 			throw new Nette\InvalidArgumentException;
 		$service = $this->services[$type];
 		$method = Container::getMethodName($service, FALSE);
-		return $this->container->$method();
+		return $this->container->$method($data);
 	}
 
 }

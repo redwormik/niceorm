@@ -3,6 +3,7 @@
 namespace NiceORM;
 
 use Nette,
+	Nette\Config\Compiler,
 	Nette\Utils\Arrays;
 
 
@@ -24,12 +25,16 @@ class NiceORMExtension extends Nette\Config\CompilerExtension
 
 		$entities = $collections = array();
 		foreach ($config['entity'] as $domain => $entity) {
-			$container->addDefinition($entities[$domain] = $this->prefix($domain.'.entity'))
-				->setClass($entity)
+			$service = $container->addDefinition($entities[$domain] = $this->prefix($domain.'.entity'));
+			Compiler::parseService($service, $entity);
+			$service->setClass('NiceORM\\Entity')
+				->setParameters(array('data' => NULL))
 				->setShared(FALSE);
 
+
 			$container->addDefinition($collections[$domain] = $this->prefix($domain.'.collection'))
-				->setClass('NiceORM\\TableCollection', array($domain, '%data%'))
+				->setClass('NiceORM\\ICollection')
+				->setFactory('NiceORM\\TableCollection', array($domain, '%data%'))
 				->setParameters(array('data'))
 				->setShared(FALSE);
 		}

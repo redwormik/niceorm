@@ -34,14 +34,25 @@ class Repository extends Nette\Object
 	}
 
 
-	public function create()
+	public function create($data = NULL)
 	{
-		return $this->manager->createEntity($this->type);
+		$entity = $this->manager->createEntity($this->type);
+		if ($data !== NULL) {
+			foreach ($data as $key => $value)
+				$entity->$key = $value;
+		}
+		return $entity;
 	}
 
 
-	public function save(Entity $entity)
+	public function save(Entity $entity = NULL, $data = NULL)
 	{
+		if ($entity === NULL)
+			$entity = $this->create();
+		if ($data !== NULL) {
+			foreach ($data as $key => $value)
+				$entity->$key = $value;
+		}
 		$this->mapper->save($entity);
 	}
 
